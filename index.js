@@ -11,8 +11,8 @@ async function download() {
         path: "/libgdx-runnables/runnable-texturepacker.jar"
     }
     return new Promise((res, rej) => {
-        fs.mkdirSync("vendor");
-        const file = fs.createWriteStream("vendor/packer.jar");
+        fs.mkdirSync(path.join(__dirname, "vendor"));
+        const file = fs.createWriteStream(path.join(__dirname, "vendor/packer.jar"));
         https.get(options, function (response) {
             if (response.statusCode !== 200) {
                 console.log(response.statusMessage  + " " + response.statusCode);
@@ -23,7 +23,7 @@ async function download() {
             file.on("finish", () => {
                 file.close();
                 console.log("Downloaded runnable jar");
-                fs.writeFileSync("vendor/marker", "marked");
+                fs.writeFileSync(path.join(__dirname, "vendor/marker"), "marked");
                 return res();
             });
         });
@@ -44,7 +44,7 @@ async function pack (packingConfig) {
     const name = packingConfig.name;
     console.log("Starting the pack of " + name);
 
-    const args = ["-jar", "vendor/packer.jar"];
+    const args = ["-jar", path.join(__dirname, "vendor/packer.jar")];
     args.push(...convertConfigToCommandLineParams(packingConfig));
 
     return new Promise((res, rej) => {
@@ -78,7 +78,7 @@ async function pack (packingConfig) {
 
 async function exec() {
 
-    const configPath = path.join(__dirname, "packerConfig.json");
+    const configPath = "packerConfig.json";
 
     console.log(`Searching for ${configPath}`);
 
@@ -102,7 +102,7 @@ async function exec() {
         throw new Error("Java not installed, need a jvm/jdk to run the packer");
     }
 
-    const shouldDownload = !fs.existsSync("vendor/marker");
+    const shouldDownload = !fs.existsSync(path.join(__dirname, "vendor/marker"));
 
     if (shouldDownload) {
         try {
