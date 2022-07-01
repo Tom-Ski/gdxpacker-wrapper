@@ -6,9 +6,11 @@
 ```js
 const pack = require("gdxpacker-wrapper");
 
-pack.exec().then(r => console.log("Completed")).catch(er => {
-console.error(er)
-});
+pack.exec()
+    .then(() => console.log("Completed"))
+    .catch(er => {
+        console.error(er)
+    });
 ```
 
 Create or run the exec function to generate a `packerConfig.json` which contains array of packing configs
