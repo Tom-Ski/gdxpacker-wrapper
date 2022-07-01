@@ -1,0 +1,10 @@
+{
+  "packingConfigs": [
+    {
+      "name": "Pack 1",
+      "rawDirectory": "input",
+      "outputDirectory": "output",
+      "packName": "packed"
+    }
+  ]
+}
