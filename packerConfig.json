@@ -6,5 +6,12 @@
       "outputDirectory": "output",
       "packName": "packed"
     }
+  ],
+  "unpackingConfigs": [
+    {
+      "name": "Unpack 1",
+      "atlasToUnpack": "skeles/spineboy.atlas",
+      "outputDirectory": "input/spineboyextrated/"
+    }
   ]
 }

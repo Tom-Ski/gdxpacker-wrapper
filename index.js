@@ -4,6 +4,8 @@ const https = require("https");
 const { spawn } = require("child_process");
 const commandExistsSync = require("command-exists").sync;
 
+const configPath = "packerConfig.json";
+
 async function download() {
 
     const options = {
@@ -30,7 +32,18 @@ async function download() {
     });
 }
 
-function convertConfigToCommandLineParams(packingConfig) {
+function convertUnpackingConfigToCommandLineParams(unpackingConfig) {
+    const atlasToUnpack = unpackingConfig.atlasToUnpack;
+    const outputDirectory = unpackingConfig.outputDirectory;
+
+    //      "name": "Unpack 1",
+    //       "atlasToUnpack": "packed",
+    //       "outputDirectory": "output"
+
+    return [atlasToUnpack, path.dirname(atlasToUnpack), outputDirectory];
+}
+
+function convertPackingConfigToCommandLineParams(packingConfig) {
     const rawDirectory = packingConfig.rawDirectory;
     const outputDirectory = packingConfig.outputDirectory;
     const packName = packingConfig.packName;
@@ -38,14 +51,48 @@ function convertConfigToCommandLineParams(packingConfig) {
     return [rawDirectory, outputDirectory, packName];
 }
 
-async function pack (packingConfig) {
+async function unpack (unpackingConfig) {
+    const name = unpackingConfig.name;
+    console.log("Starting unpack of " + name);
 
+    const args = ["-cp", path.join(__dirname, "vendor/packer.jar"), "com.badlogic.gdx.tools.texturepacker.TextureUnpacker"];
+    args.push(...convertUnpackingConfigToCommandLineParams(unpackingConfig));
+
+    return new Promise((res, rej) => {
+        console.log(`Starting process with args ${args}`)
+        const packerProcess = spawn("java", args);
+
+        packerProcess.stdout.on("data", data => {
+            console.log(`stdout: ${data}`);
+        });
+
+        packerProcess.stderr.on("data", data => {
+            console.log(`stderr: ${data}`);
+        });
+
+        packerProcess.on('error', (error) => {
+            console.log(`error: ${error.message}`);
+        });
+
+        packerProcess.on("close", code => {
+            console.log(`child process exited with code ${code}`);
+            if (code === 0) {
+                return res();
+            } else {
+                return rej(`Packing process exited with ${code}`);
+            }
+        });
+
+    });
+}
+
+async function pack (packingConfig) {
 
     const name = packingConfig.name;
     console.log("Starting the pack of " + name);
 
     const args = ["-jar", path.join(__dirname, "vendor/packer.jar")];
-    args.push(...convertConfigToCommandLineParams(packingConfig));
+    args.push(...convertPackingConfigToCommandLineParams(packingConfig));
 
     return new Promise((res, rej) => {
         console.log(`Starting process with args ${args}`)
@@ -76,13 +123,60 @@ async function pack (packingConfig) {
 
 }
 
+async function unpackAll () {
+    const promises = [];
+
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        for (let unpackingConfig of config.unpackingConfigs) {
+            promises.push(unpack(unpackingConfig));
+        }
+    } catch (e) {
+        console.error("Error ", e);
+        throw e;
+    }
+
+
+
+    try {
+        await Promise.all(promises);
+    } catch (error) {
+        console.error("Error unpacking", error);
+        throw error;
+    }
+}
+
+async function packAll () {
+    //Lets grab the config and start packing
+    const promises = [];
+
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        for (let packingConfig of config.packingConfigs) {
+            promises.push(pack(packingConfig));
+        }
+    } catch (e) {
+        console.error("Error ", e);
+        throw e;
+    }
+
+    try {
+        await Promise.all(promises);
+    } catch (error) {
+        console.error("Error packing", error);
+        throw error;
+    }
+}
+
 async function exec() {
 
-    const configPath = "packerConfig.json";
 
     console.log(`Searching for ${configPath}`);
 
     const defaultConfig = JSON.stringify({
+        unpackingConfigs: [
+
+        ],
         packingConfigs: [
             {
                 name: "Pack 1",
@@ -112,25 +206,8 @@ async function exec() {
         }
     }
 
-    //Lets grab the config and start packing
-    const promises = [];
-
-    try {
-        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        for (let packingConfig of config.packingConfigs) {
-            promises.push(pack(packingConfig));
-        }
-    } catch (e) {
-        console.error("Error ", e);
-        throw e;
-    }
-
-    try {
-        await Promise.all(promises);
-    } catch (error) {
-        console.error("Error packing", error);
-    }
-
+    await unpackAll();
+    await packAll();
 }
 
 module.exports = {
