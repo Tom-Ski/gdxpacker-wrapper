@@ -1,6 +1,6 @@
 {
   "name": "gdxpacker-wrapper",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "js wrapper for invoking gdx texturepacker",
   "main": "index.js",
   "scripts": {

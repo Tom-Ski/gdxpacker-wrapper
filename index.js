@@ -48,7 +48,7 @@ function convertPackingConfigToCommandLineParams(packingConfig) {
     const outputDirectory = packingConfig.outputDirectory;
     const packName = packingConfig.packName;
 
-    return [rawDirectory, outputDirectory, packName];
+    return [rawDirectory, outputDirectory, packName, path.join(rawDirectory, "pack.json")];
 }
 
 async function unpack (unpackingConfig) {
